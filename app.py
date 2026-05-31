@@ -32,6 +32,7 @@ from urllib.parse import urlparse, parse_qs
 APP_DIR = Path(__file__).resolve().parent
 STATIC_DIR = APP_DIR / "static"
 PROFILE = os.environ.get("HERMES_DASHBOARD_PROFILE", "tecnico")
+HERMES_HOME = Path(os.environ["HERMES_HOME"]) if os.environ.get("HERMES_HOME") else Path(f"/home/devcode/.hermes/profiles/{PROFILE}")
 ROOT_HERMES = Path("/home/devcode/.hermes")
 
 def get_profile_home(profile: str) -> Path:
