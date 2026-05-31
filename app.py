@@ -27,14 +27,20 @@ import time
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
 
 APP_DIR = Path(__file__).resolve().parent
 STATIC_DIR = APP_DIR / "static"
 PROFILE = os.environ.get("HERMES_DASHBOARD_PROFILE", "tecnico")
-HERMES_HOME = Path(os.environ.get("HERMES_HOME", f"/home/devcode/.hermes/profiles/{PROFILE}"))
 ROOT_HERMES = Path("/home/devcode/.hermes")
-STATE_DB = HERMES_HOME / "state.db"
+
+def get_profile_home(profile: str) -> Path:
+    if profile == os.environ.get("HERMES_DASHBOARD_PROFILE", "tecnico") and os.environ.get("HERMES_HOME"):
+        return Path(os.environ.get("HERMES_HOME"))
+    return Path(f"/home/devcode/.hermes/profiles/{profile}")
+
+def get_profile_state_db(profile: str) -> Path:
+    return get_profile_home(profile) / "state.db"
 PORT = int(os.environ.get("HERMES_DASHBOARD_PORT", "8770"))
 CACHE_TTL = float(os.environ.get("HERMES_DASHBOARD_CACHE_TTL", "8"))
 BASIC_AUTH_USER = os.environ.get("HERMES_DASHBOARD_BASIC_USER", "")
@@ -48,6 +54,11 @@ SECRET_RE = re.compile(
 )
 
 _cache: dict[str, tuple[float, object]] = {}
+
+def clear_profile_cache(profile: str):
+    keys_to_del = [k for k in _cache if k.startswith(f"{profile}:")]
+    for k in keys_to_del:
+        _cache.pop(k, None)
 
 
 def now_iso() -> str:
@@ -80,13 +91,14 @@ def run_cmd(args: list[str], timeout: int = 20) -> tuple[str, int]:
         return f"ERROR: {type(e).__name__}: {e}", 1
 
 
-def cached(key: str, fn, ttl: float = CACHE_TTL):
+def cached(key: str, profile: str, fn, ttl: float = CACHE_TTL):
     t = time.time()
-    hit = _cache.get(key)
+    cache_key = f"{profile}:{key}"
+    hit = _cache.get(cache_key)
     if hit and t - hit[0] < ttl:
         return hit[1]
-    value = fn()
-    _cache[key] = (t, value)
+    value = fn(profile)
+    _cache[cache_key] = (t, value)
     return value
 
 
@@ -109,8 +121,8 @@ def parse_status(text: str) -> dict:
     return data
 
 
-def get_status() -> dict:
-    text, code = run_cmd(["hermes", "--profile", PROFILE, "status", "--all"], 30)
+def get_status(profile: str) -> dict:
+    text, code = run_cmd(["hermes", "--profile", profile, "status", "--all"], 30)
     parsed = parse_status(text)
     parsed.update({"ok": code == 0, "updated_at": now_iso()})
     return parsed
@@ -140,7 +152,7 @@ def parse_profiles(text: str) -> list[dict]:
     return rows
 
 
-def get_profiles() -> dict:
+def get_profiles(profile: str = "") -> dict:
     text, code = run_cmd(["hermes", "profile", "list"], 20)
     return {"ok": code == 0, "profiles": parse_profiles(text), "raw": text, "updated_at": now_iso()}
 
@@ -164,8 +176,8 @@ def parse_cron(text: str) -> list[dict]:
     return jobs
 
 
-def get_cron() -> dict:
-    text, code = run_cmd(["hermes", "cron", "list", "--all"], 25)
+def get_cron(profile: str) -> dict:
+    text, code = run_cmd(["hermes", "--profile", profile, "cron", "list", "--all"], 25)
     return {"ok": code == 0, "jobs": parse_cron(text), "raw": text, "updated_at": now_iso()}
 
 
@@ -194,19 +206,20 @@ def parse_insights(text: str) -> dict:
     return out
 
 
-def get_insights() -> dict:
-    text, code = run_cmd(["hermes", "insights", "--days", "7"], 35)
+def get_insights(profile: str) -> dict:
+    text, code = run_cmd(["hermes", "--profile", profile, "insights", "--days", "7"], 35)
     data = parse_insights(text)
     data.update({"ok": code == 0, "updated_at": now_iso()})
     return data
 
 
-def get_sessions() -> dict:
+def get_sessions(profile: str) -> dict:
     sessions = []
     totals = {"sessions": 0, "messages": 0, "tool_calls": 0, "input_tokens": 0, "output_tokens": 0, "estimated_cost_usd": 0.0}
-    if STATE_DB.exists():
+    state_db = get_profile_state_db(profile)
+    if state_db.exists():
         try:
-            con = sqlite3.connect(f"file:{STATE_DB}?mode=ro", uri=True)
+            con = sqlite3.connect(f"file:{state_db}?mode=ro", uri=True)
             con.row_factory = sqlite3.Row
             totals_row = con.execute(
                 "select count(*) sessions, coalesce(sum(message_count),0) messages, coalesce(sum(tool_call_count),0) tool_calls, "
@@ -227,11 +240,11 @@ def get_sessions() -> dict:
             con.close()
         except Exception as e:
             return {"ok": False, "error": str(e), "sessions": [], "totals": totals, "updated_at": now_iso()}
-    return {"ok": True, "sessions": sessions, "totals": totals, "db": str(STATE_DB), "updated_at": now_iso()}
+    return {"ok": True, "sessions": sessions, "totals": totals, "db": str(state_db), "updated_at": now_iso()}
 
 
-def get_skills() -> dict:
-    usage_path = HERMES_HOME / "skills" / ".usage.json"
+def get_skills(profile: str) -> dict:
+    usage_path = get_profile_home(profile) / "skills" / ".usage.json"
     skills = []
     if usage_path.exists():
         try:
@@ -256,11 +269,12 @@ def tail_file(path: Path, lines: int = 80) -> list[str]:
         return [f"ERROR leyendo {path}: {e}"]
 
 
-def get_logs() -> dict:
+def get_logs(profile: str) -> dict:
+    home = get_profile_home(profile)
     return {
         "ok": True,
-        "gateway": tail_file(HERMES_HOME / "logs" / "gateway.log", 80),
-        "agent": tail_file(HERMES_HOME / "logs" / "agent.log", 80),
+        "gateway": tail_file(home / "logs" / "gateway.log", 80),
+        "agent": tail_file(home / "logs" / "agent.log", 80),
         "updated_at": now_iso(),
     }
 
@@ -284,9 +298,9 @@ def parse_iso_dt(value: str | None):
         return None
 
 
-def enhance_cron_jobs(cli_jobs: list[dict]) -> list[dict]:
+def enhance_cron_jobs(cli_jobs: list[dict], profile: str) -> list[dict]:
     """Merge CLI cron output with jobs.json metadata for richer dashboard cards."""
-    jobs_json = read_json_safe(HERMES_HOME / "cron" / "jobs.json")
+    jobs_json = read_json_safe(get_profile_home(profile) / "cron" / "jobs.json")
     by_id = {}
     for job in jobs_json.get("jobs", []) if isinstance(jobs_json, dict) else []:
         if isinstance(job, dict) and job.get("id"):
@@ -331,9 +345,9 @@ def enhance_cron_jobs(cli_jobs: list[dict]) -> list[dict]:
     return enhanced
 
 
-def get_cron_advanced() -> dict:
-    base = get_cron()
-    base["jobs"] = enhance_cron_jobs(base.get("jobs", []))
+def get_cron_advanced(profile: str) -> dict:
+    base = get_cron(profile)
+    base["jobs"] = enhance_cron_jobs(base.get("jobs", []), profile)
     active = [j for j in base["jobs"] if str(j.get("state", j.get("state_detail", ""))).lower() in {"active", "scheduled"} or j.get("enabled") is True]
     errors = [j for j in base["jobs"] if j.get("last_error") or j.get("last_delivery_error") or str(j.get("last_status") or "").lower() in {"failed", "error"}]
     base["summary"] = {"total": len(base["jobs"]), "active": len(active), "errors": len(errors), "finanzas": sum(1 for j in base["jobs"] if j.get("kind") == "finanzas")}
@@ -350,7 +364,7 @@ def parse_google_scopes() -> list[str]:
     return [str(x) for x in scopes if x]
 
 
-def get_finanzas() -> dict:
+def get_finanzas(profile: str = "finanzas") -> dict:
     home = Path("/home/devcode/.hermes/profiles/finanzas")
     status_text, code = run_cmd(["hermes", "--profile", "finanzas", "status", "--all"], 30)
     status = parse_status(status_text)
@@ -359,7 +373,7 @@ def get_finanzas() -> dict:
     client_path = home / "google_client_secret.json"
     state_db = home / "state.db"
     scopes = parse_google_scopes()
-    jobs = [j for j in get_cron_advanced().get("jobs", []) if (j.get("profile") == "finanzas" or "finanza" in str(j.get("name", "")).lower())]
+    jobs = [j for j in get_cron_advanced("finanzas").get("jobs", []) if (j.get("profile") == "finanzas" or "finanza" in str(j.get("name", "")).lower())]
     log_lines = tail_file(home / "logs" / "agent.log", 60)
     error_lines = tail_file(home / "logs" / "errors.log", 40)
     workspace = {
@@ -395,12 +409,12 @@ def get_finanzas() -> dict:
     }
 
 
-def get_diagnostics() -> dict:
-    status = cached("status", get_status)
-    cron = cached("cron_advanced", get_cron_advanced)
-    sessions = cached("sessions", get_sessions)
-    finanzas = cached("finanzas", get_finanzas, 20)
-    logs = get_logs()
+def get_diagnostics(profile: str) -> dict:
+    status = cached("status", profile, get_status)
+    cron = cached("cron_advanced", profile, get_cron_advanced)
+    sessions = cached("sessions", profile, get_sessions)
+    finanzas = cached("finanzas", "finanzas", get_finanzas, 20)
+    logs = get_logs(profile)
     items = []
     def add(severity, title, detail, area="general", action=None):
         items.append({"severity": severity, "title": title, "detail": detail, "area": area, "action": action})
@@ -447,18 +461,18 @@ def get_diagnostics() -> dict:
     score = max(0, min(100, score))
     return {"ok": True, "score": score, "items": items, "updated_at": now_iso()}
 
-def get_overview() -> dict:
+def get_overview(profile: str) -> dict:
     return {
-        "profile": PROFILE,
-        "hermes_home": str(HERMES_HOME),
-        "status": cached("status", get_status),
-        "profiles": cached("profiles", get_profiles),
-        "cron": cached("cron_advanced", get_cron_advanced),
-        "sessions": cached("sessions", get_sessions),
-        "insights": cached("insights", get_insights, 30),
-        "skills": cached("skills", get_skills),
-        "diagnostics": cached("diagnostics", get_diagnostics, 15),
-        "finanzas": cached("finanzas", get_finanzas, 20),
+        "profile": profile,
+        "hermes_home": str(get_profile_home(profile)),
+        "status": cached("status", profile, get_status),
+        "profiles": cached("profiles", profile, get_profiles),
+        "cron": cached("cron_advanced", profile, get_cron_advanced),
+        "sessions": cached("sessions", profile, get_sessions),
+        "insights": cached("insights", profile, get_insights, 30),
+        "skills": cached("skills", profile, get_skills),
+        "diagnostics": cached("diagnostics", profile, get_diagnostics, 15),
+        "finanzas": cached("finanzas", "finanzas", get_finanzas, 20),
         "negocios": {"revenue_today": "$1,240 USD", "conversion_rate": "3.2%", "active_clients": 142},
         "updated_at": now_iso(),
     }
@@ -530,18 +544,21 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_file(STATIC_DIR / "index.html")
         if self.auth_required(): return
         try:
-            if path == "/api/overview": return self.send_json(cached("overview", get_overview, CACHE_TTL))
-            if path == "/api/status": return self.send_json(cached("status", get_status))
-            if path == "/api/profiles": return self.send_json(cached("profiles", get_profiles))
-            if path == "/api/cron": return self.send_json(cached("cron_advanced", get_cron_advanced))
-            if path == "/api/sessions": return self.send_json(cached("sessions", get_sessions))
-            if path == "/api/insights": return self.send_json(cached("insights", get_insights, 30))
-            if path == "/api/skills": return self.send_json(cached("skills", get_skills))
-            if path == "/api/logs": return self.send_json(get_logs())
-            if path == "/api/diagnostics": return self.send_json(cached("diagnostics", get_diagnostics, 15))
-            if path == "/api/finanzas": return self.send_json(cached("finanzas", get_finanzas, 20))
+            params = parse_qs(parsed.query)
+            profile = params.get("profile", [PROFILE])[0]
+
+            if path == "/api/overview": return self.send_json(cached("overview", profile, get_overview, CACHE_TTL))
+            if path == "/api/status": return self.send_json(cached("status", profile, get_status))
+            if path == "/api/profiles": return self.send_json(cached("profiles", profile, get_profiles))
+            if path == "/api/cron": return self.send_json(cached("cron_advanced", profile, get_cron_advanced))
+            if path == "/api/sessions": return self.send_json(cached("sessions", profile, get_sessions))
+            if path == "/api/insights": return self.send_json(cached("insights", profile, get_insights, 30))
+            if path == "/api/skills": return self.send_json(cached("skills", profile, get_skills))
+            if path == "/api/logs": return self.send_json(get_logs(profile))
+            if path == "/api/diagnostics": return self.send_json(cached("diagnostics", profile, get_diagnostics, 15))
+            if path == "/api/finanzas": return self.send_json(cached("finanzas", "finanzas", get_finanzas, 20))
             if path == "/api/negocios": return self.send_json({"revenue_today": "$1,240 USD", "conversion_rate": "3.2%", "active_clients": 142})
-            if path == "/healthz": return self.send_json({"ok": True, "profile": PROFILE, "time": now_iso()})
+            if path == "/healthz": return self.send_json({"ok": True, "profile": profile, "time": now_iso()})
             if path in ("/", "/index.html"):
                 return self.send_file(STATIC_DIR / "index.html")
             safe = Path(path.lstrip("/"))
@@ -558,7 +575,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         parsed = urlparse(self.path)
-        if parsed.path == "/api/login":
+        path = parsed.path
+        if path == "/api/login":
             length = int(self.headers.get("Content-Length", 0))
             try:
                 data = json.loads(self.rfile.read(length))
@@ -579,7 +597,93 @@ class Handler(BaseHTTPRequestHandler):
                 pass
             self.send_json({"ok": False, "error": "Credenciales incorrectas"}, 401)
             return
-        self.send_error(404)
+
+        if self.auth_required():
+            return
+
+        params = parse_qs(parsed.query)
+        profile = params.get("profile", [PROFILE])[0]
+
+        length = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(length) if length > 0 else b""
+        data = {}
+        if body:
+            try:
+                data = json.loads(body)
+            except Exception:
+                pass
+
+        try:
+            # Gateway Actions
+            if path in ("/api/gateway/start", "/api/gateway/stop", "/api/gateway/restart"):
+                action = path.split("/")[-1]
+                output, code = run_cmd(["hermes", "--profile", profile, "gateway", action], 40)
+                if code == 0:
+                    clear_profile_cache(profile)
+                return self.send_json({"ok": code == 0, "output": output, "code": code})
+
+            if path == "/api/gateway/status":
+                output, code = run_cmd(["hermes", "--profile", profile, "gateway", "status"], 20)
+                return self.send_json({"ok": code == 0, "output": output, "code": code})
+
+            # Cron Actions
+            if path == "/api/cron/run":
+                job_id = data.get("id")
+                if not job_id:
+                    return self.send_json({"ok": False, "error": "Falta ID de tarea"}, 400)
+                output, code = run_cmd(["hermes", "--profile", profile, "cron", "run", job_id], 40)
+                if code == 0:
+                    clear_profile_cache(profile)
+                return self.send_json({"ok": code == 0, "output": output, "code": code})
+
+            if path == "/api/cron/pause":
+                job_id = data.get("id")
+                if not job_id:
+                    return self.send_json({"ok": False, "error": "Falta ID de tarea"}, 400)
+                output, code = run_cmd(["hermes", "--profile", profile, "cron", "pause", job_id], 30)
+                if code == 0:
+                    clear_profile_cache(profile)
+                return self.send_json({"ok": code == 0, "output": output, "code": code})
+
+            if path == "/api/cron/resume":
+                job_id = data.get("id")
+                if not job_id:
+                    return self.send_json({"ok": False, "error": "Falta ID de tarea"}, 400)
+                output, code = run_cmd(["hermes", "--profile", profile, "cron", "resume", job_id], 30)
+                if code == 0:
+                    clear_profile_cache(profile)
+                return self.send_json({"ok": code == 0, "output": output, "code": code})
+
+            if path == "/api/cron/remove":
+                job_id = data.get("id")
+                if not job_id:
+                    return self.send_json({"ok": False, "error": "Falta ID de tarea"}, 400)
+                output, code = run_cmd(["hermes", "--profile", profile, "cron", "remove", job_id], 30)
+                if code == 0:
+                    clear_profile_cache(profile)
+                return self.send_json({"ok": code == 0, "output": output, "code": code})
+
+            if path == "/api/cron/create":
+                schedule = data.get("schedule")
+                prompt = data.get("prompt")
+                if not schedule or not prompt:
+                    return self.send_json({"ok": False, "error": "Falta schedule o prompt"}, 400)
+                output, code = run_cmd(["hermes", "--profile", profile, "cron", "create", schedule, prompt], 45)
+                if code == 0:
+                    clear_profile_cache(profile)
+                return self.send_json({"ok": code == 0, "output": output, "code": code})
+
+            # Quick Chat Query
+            if path == "/api/chat/query":
+                query = data.get("query")
+                if not query:
+                    return self.send_json({"ok": False, "error": "Falta query"}, 400)
+                output, code = run_cmd(["hermes", "--profile", profile, "chat", "-q", query], 90)
+                return self.send_json({"ok": code == 0, "output": output, "code": code})
+
+            self.send_error(404)
+        except Exception as e:
+            return self.send_json({"ok": False, "error": html.escape(str(e))}, 500)
 
 
 def main():

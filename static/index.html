@@ -15,18 +15,19 @@
 <body>
   <div class="app">
     <aside class="sidebar">
-      <div class="brand"><div class="logo">H</div><div><h1>Hermes Ops</h1><p>Dashboard real · perfil técnico</p></div></div>
+      <div class="brand"><div class="logo">H</div><div><h1>Hermes Ops</h1><p id="brandProfile">Dashboard real · perfil técnico</p></div></div>
       <nav class="nav">
         <a href="#overview" class="active">Overview <span class="pill">LIVE</span></a>
         <a href="#diagnostico">Diagnóstico <span class="pill">NEW</span></a>
         <a href="#cron-advanced">Cron avanzado <span class="pill">NEW</span></a>
+        <a href="#quick-console">Consola Rápida <span class="pill">HOT</span></a>
         <a href="#finanzas">Finanzas <span class="pill">NEW</span></a>
         <a href="#negocios">Negocios <span class="pill">MOCK</span></a>
         <a href="#profiles">Perfiles</a>
         <a href="#sessions">Sesiones</a>
         <a href="#logs">Logs</a>
       </nav>
-      <div class="sidecard"><strong>Conectado a Hermes</strong><p>Lee datos reales del CLI, SQLite, cron/jobs.json, skills y logs. Sigue siendo read-only por seguridad.</p></div>
+      <div class="sidecard"><strong>Conectado a Hermes</strong><p>Gestiona perfiles, Gateway, Cron jobs y ejecuta prompts directamente con la consola interactiva.</p></div>
     </aside>
     <main class="main">
       <header class="top" id="overview">
@@ -44,13 +45,54 @@
         </div>
         <div class="card"><div class="section-title"><h2 id="detailTitle">Detalle</h2><span id="detailMeta">selecciona un nodo</span></div><div id="detailBody" class="panel-list"></div></div>
         <div class="card wide" id="diagnostico"><div class="section-title"><h2>Diagnóstico automático</h2><span id="diagUpdated">Hermes doctor light</span></div><div class="diag-layout"><div><div class="diag-score" id="diagScore" style="--score:0"><b>—</b></div><p class="label" style="margin-top:10px">Score operativo</p></div><div><div class="tabs" id="diagTabs"></div><div id="diagRows" class="panel-list"></div></div></div></div>
-        <div class="card wide" id="cron-advanced"><div class="section-title"><h2>Cron jobs avanzado</h2><span id="cronUpdated"></span></div><div class="cards" id="cronSummary"></div><table class="table"><thead><tr><th>Job</th><th>Estado</th><th>Schedule</th><th>Próxima</th><th>Entrega</th><th>Skills</th><th>Último resultado</th></tr></thead><tbody id="cronTable"></tbody></table></div>
+        <div class="card wide" id="cron-advanced">
+          <div class="section-title"><h2>Cron jobs avanzado</h2><span id="cronUpdated"></span></div>
+          <div class="cards" id="cronSummary"></div>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Job</th>
+                <th>Estado</th>
+                <th>Schedule</th>
+                <th>Próxima</th>
+                <th>Entrega</th>
+                <th>Skills</th>
+                <th>Último resultado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="cronTable"></tbody>
+          </table>
+          <div style="margin-top:20px;padding:16px;border:1px solid var(--line);border-radius:16px;background:rgba(15,23,42,.3)">
+            <h3 style="margin-top:0;font-size:15px;color:var(--cyan)">Crear nueva tarea programada (Cron Job)</h3>
+            <form id="createCronForm" onsubmit="createCronJob(event)" style="display:grid;grid-template-columns:1fr 2fr auto;gap:12px;align-items:end">
+              <div style="display:grid;gap:6px">
+                <label class="label">Schedule (cron expr)</label>
+                <input type="text" id="cronSchedule" placeholder="ej. 0 7 * * *" required style="padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:rgba(2,6,23,.5);color:#fff;outline:none">
+              </div>
+              <div style="display:grid;gap:6px">
+                <label class="label">Prompt / Instrucción del Agente</label>
+                <input type="text" id="cronPrompt" placeholder="ej. Analiza las últimas ventas y crea un reporte en Sheets" required style="padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:rgba(2,6,23,.5);color:#fff;outline:none">
+              </div>
+              <button class="btn primary" type="submit" style="padding:9px 16px;border-radius:10px;font-size:13px">Crear Tarea</button>
+            </form>
+          </div>
+        </div>
         <div class="card wide" id="finanzas"><div class="section-title"><h2>Panel Finanzas</h2><span>perfil finanzas · Gmail/Drive/Sheets</span></div><div class="finance-hero" id="financeHero"></div><div class="check" id="financeChecklist"></div><h3>Jobs de finanzas</h3><div id="financeJobs" class="panel-list"></div><h3>Logs recientes del perfil finanzas</h3><div class="logs" id="financeLogs">cargando…</div></div>
         <div class="card" id="negocios"><div class="section-title"><h2>Negocios</h2><span>resumen</span></div><div id="negociosRows" class="panel-list">cargando…</div></div>
         <div class="card"><div class="section-title"><h2>Cron jobs reales</h2><span>resumen rápido</span></div><div id="cronRows" class="panel-list"></div></div>
         <div class="card"><div class="section-title"><h2>Salud del sistema</h2><span>desde status / insights</span></div><div class="bars" id="healthBars"></div></div>
         <div class="card wide" id="sessions"><div class="section-title"><h2>Sesiones recientes</h2><span>SQLite state.db</span></div><table class="table"><thead><tr><th>Título</th><th>Fuente</th><th>Modelo</th><th>Mensajes</th><th>Tools</th><th>Inicio</th></tr></thead><tbody id="sessionRows"></tbody></table></div>
         <div class="card"><div class="section-title"><h2>Skills más usadas</h2><span>.usage.json</span></div><div id="skillRows" class="panel-list"></div></div>
+        <div class="card wide" id="quick-console">
+          <div class="section-title"><h2>Consola Rápida de hermesAgent</h2><span class="pill">INTERACTIVA</span></div>
+          <p class="subtitle" style="margin-bottom:12px">Envía un prompt directamente al agente en modo no interactivo (`hermes chat -q`) y observa su respuesta.</p>
+          <div style="display:grid;grid-template-columns:1fr auto;gap:12px;margin-bottom:14px">
+            <textarea id="consoleQuery" placeholder="Escribe tu prompt para hermesAgent aquí... (ej: 'di hola', 'analiza el archivo README.md')" style="width:100%;height:60px;padding:12px;border-radius:12px;border:1px solid var(--line);background:rgba(2,6,23,.5);color:#fff;outline:none;font-family:inherit;resize:none"></textarea>
+            <button class="btn primary" onclick="runConsoleQuery()" style="height:60px;padding:0 24px;border-radius:12px;font-weight:800">Enviar Prompt</button>
+          </div>
+          <div class="logs" id="consoleOutput" style="min-height:120px;max-height:280px;background:#020617;border-color:rgba(34,211,238,.3)">Introduce una instrucción para comenzar a chatear con el agente.</div>
+        </div>
         <div class="card" id="logs">
           <div class="section-title"><h2>Logs del sistema</h2><span>redactado · últimas líneas</span></div>
           <div class="tabs" id="logTabs">
@@ -109,7 +151,29 @@ function renderCron(d){
   const c=d.cron||{}, jobs=c.jobs||[]; $('cronUpdated').textContent=c.updated_at?dt(c.updated_at):'';
   $('cronRows').innerHTML = jobs.length?jobs.map(j=>row(j.name||j.id, `${j.schedule||'sin schedule'} · next: ${j.next_in_human||j.next_run||'—'} · profile: ${j.profile||'—'}`, badge(j.state||j.state_detail||'—', (j.enabled===false)?'warn':'ok'))).join(''):'<p class="empty">No hay cron jobs detectados.</p>';
   const s=c.summary||{}; $('cronSummary').innerHTML=[['Total',s.total??0,'jobs registrados'],['Activos',s.active??0,'habilitados/scheduled'],['Finanzas',s.finanzas??0,'jobs del perfil finanzas'],['Errores',s.errors??0,'últimos errores']].map(([a,b,c])=>`<div class="card"><div class="label">${a}</div><div class="metric">${b}</div><div class="trend">${c}</div></div>`).join('');
-  $('cronTable').innerHTML=jobs.map(j=>`<tr><td><b>${esc(j.name||j.id)}</b><br><small class="mono">${esc(j.id)}</small><br><small>${esc(j.profile||'—')}</small></td><td>${badge(j.state||j.state_detail||'—', j.last_error?'bad':(j.enabled===false?'warn':'ok'))}</td><td class="mono">${esc(j.schedule||'—')}</td><td>${esc(j.next_in_human||'—')}<br><small>${esc(j.next_run||'—')}</small></td><td>${esc(j.deliver||'—')}</td><td>${(j.skills||[]).map(x=>badge(x,'info')).join(' ')||'—'}</td><td>${esc(j.last_status||'sin ejecución')}<br><small>${esc(j.last_error||j.last_delivery_error||'')}</small></td></tr>`).join('') || '<tr><td colspan="7">Sin jobs.</td></tr>';
+  $('cronTable').innerHTML=jobs.map(j=>{
+    const isPaused = String(j.state||j.state_detail||'').toLowerCase() === 'paused';
+    const pauseResumeBtn = isPaused 
+      ? `<button class="btn" style="padding:4px 8px;font-size:11px;border-color:var(--green);color:var(--green);" onclick="cronAction('resume', '${esc(j.id)}')">Reanudar</button>` 
+      : `<button class="btn" style="padding:4px 8px;font-size:11px;border-color:var(--amber);color:var(--amber);" onclick="cronAction('pause', '${esc(j.id)}')">Pausar</button>`;
+    
+    return `<tr>
+      <td><b>${esc(j.name||j.id)}</b><br><small class="mono">${esc(j.id)}</small><br><small>${esc(j.profile||'—')}</small></td>
+      <td>${badge(j.state||j.state_detail||'—', j.last_error?'bad':(j.enabled===false?'warn':'ok'))}</td>
+      <td class="mono">${esc(j.schedule||'—')}</td>
+      <td>${esc(j.next_in_seconds !== undefined ? j.next_in_human : '—')}<br><small>${esc(j.next_run||'—')}</small></td>
+      <td>${esc(j.deliver||'—')}</td>
+      <td>${(j.skills||[]).map(x=>badge(x,'info')).join(' ')||'—'}</td>
+      <td>${esc(j.last_status||'sin ejecución')}<br><small style="color:var(--red);">${esc(j.last_error||j.last_delivery_error||'')}</small></td>
+      <td>
+        <div style="display:flex;gap:4px;flex-direction:column;">
+          <button class="btn" style="padding:4px 8px;font-size:11px;border-color:var(--cyan);color:var(--cyan);" onclick="cronAction('run', '${esc(j.id)}')">Ejecutar</button>
+          ${pauseResumeBtn}
+          <button class="btn" style="padding:4px 8px;font-size:11px;border-color:var(--red);color:var(--red);" onclick="cronAction('remove', '${esc(j.id)}')">Eliminar</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="8">Sin jobs.</td></tr>';
 }
 function renderDiagnostics(d){
   const diag=d.diagnostics||{}, items=diag.items||[], areas=['all',...Array.from(new Set(items.map(i=>i.area||'general')))].slice(0,8);
@@ -152,7 +216,7 @@ function switchLog(type) {
 }
 async function renderLogs() {
   try {
-    const r = await fetch('/api/logs', { credentials: 'include' });
+    const r = await fetch(`/api/logs?profile=${currentProfile}`, { credentials: 'include' });
     if (!r.ok) throw new Error('HTTP ' + r.status);
     logCache = await r.json();
     switchLog(activeLogTab);
@@ -163,10 +227,39 @@ async function renderLogs() {
 function setDetail(key){
   const d=state; document.querySelectorAll('.node').forEach(n=>n.classList.toggle('active', n.dataset.node===key));
   if(key==='core'){$('detailTitle').textContent='Hermes Core'; $('detailMeta').textContent='status real'; $('detailBody').innerHTML=[row('Modelo',d.status.model,d.status.provider),row('Home',d.hermes_home,'')].join(''); return}
-  if(key==='gateway'){$('detailTitle').textContent='Gateway'; $('detailMeta').textContent='mensajería'; $('detailBody').innerHTML=[row('Estado',d.status.gateway||'desconocido',badge(d.status.telegram||'telegram')),row('Scheduled jobs',d.status.scheduled_jobs||'—','')].join(''); return}
+  if(key==='gateway'){
+    $('detailTitle').textContent='Gateway'; 
+    $('detailMeta').textContent='mensajería'; 
+    $('detailBody').innerHTML=[
+      row('Estado',d.status.gateway||'desconocido',badge(d.status.telegram||'telegram')),
+      row('Scheduled jobs',d.status.scheduled_jobs||'—',''),
+      `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;">
+        <button class="btn" style="border-color:var(--green);color:var(--green);" onclick="controlGateway('start')">Iniciar</button>
+        <button class="btn" style="border-color:var(--red);color:var(--red);" onclick="controlGateway('stop')">Detener</button>
+        <button class="btn" style="grid-column:span 2;border-color:var(--violet);color:var(--violet);" onclick="controlGateway('restart')">Reiniciar Gateway</button>
+      </div>`
+    ].join(''); 
+    return;
+  }
   if(key==='sessions'){$('detailTitle').textContent='Sesiones'; $('detailMeta').textContent='SQLite'; const t=d.sessions.totals; $('detailBody').innerHTML=[row('Sesiones',num(t.sessions),''),row('Mensajes',num(t.messages),''),row('Tool calls',num(t.tool_calls),'')].join(''); return}
   if(key==='cron'){$('detailTitle').textContent='Cron'; $('detailMeta').textContent='scheduler'; $('detailBody').innerHTML=(d.cron.jobs||[]).map(j=>row(j.name||j.id,j.schedule,badge(j.state||j.state_detail))).join('')||'Sin jobs'; return}
-  if(key.startsWith('profile:')){const name=key.split(':')[1]; const p=(d.profiles.profiles||[]).find(x=>x.name===name)||{}; $('detailTitle').textContent='Perfil '+name; $('detailMeta').textContent=p.active?'activo':'perfil'; $('detailBody').innerHTML=[row('Modelo',p.model,''),row('Gateway',p.gateway,badge(p.active?'activo':'perfil',p.active?'ok':'')),row('Alias',p.alias||'—','')].join('');}
+  if(key.startsWith('profile:')){
+    const name=key.split(':')[1]; 
+    const p=(d.profiles.profiles||[]).find(x=>x.name===name)||{}; 
+    $('detailTitle').textContent='Perfil '+name; 
+    $('detailMeta').textContent=p.active?'activo':'perfil'; 
+    
+    const monitorBtn = name === currentProfile 
+      ? `<div style="margin-top:12px;text-align:center;font-size:12px;color:var(--cyan);font-weight:bold;">★ Perfil actualmente monitoreado</div>`
+      : `<button class="btn primary" style="width:100%;margin-top:12px;" onclick="switchDashboardProfile('${esc(name)}')">Monitorear este Perfil</button>`;
+      
+    $('detailBody').innerHTML=[
+      row('Modelo',p.model,''),
+      row('Gateway',p.gateway,badge(p.active?'activo':'perfil',p.active?'ok':'')),
+      row('Alias',p.alias||'—',''),
+      monitorBtn
+    ].join('');
+  }
 }
 function bindNodes(){document.querySelectorAll('.node').forEach(n=>n.onclick=()=>setDetail(n.dataset.node));}
 async function login(e){
@@ -179,11 +272,157 @@ async function login(e){
   } catch(e){err.textContent='Error de conexión'; err.style.display='block'}
   finally {btn.disabled=false; btn.textContent='Acceder'}
 }
+let currentProfile = localStorage.getItem("hermes_current_profile") || "tecnico";
+
+function switchDashboardProfile(name) {
+  currentProfile = name;
+  localStorage.setItem("hermes_current_profile", name);
+  loadAll();
+}
+
+async function controlGateway(action) {
+  if (!confirm(`¿Estás seguro de que deseas ejecutar '${action}' en el Gateway?`)) return;
+  const btn = event?.target;
+  const originalText = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Ejecutando...'; }
+  try {
+    const r = await fetch(`/api/gateway/${action}?profile=${currentProfile}`, { method: 'POST', credentials: 'include' });
+    const res = await r.json();
+    if (res.ok) {
+      alert(`Acción '${action}' ejecutada con éxito.\nSalida: ${res.output || 'OK'}`);
+    } else {
+      alert(`Error ejecutando acción: ${res.error || res.output || 'Desconocido'}`);
+    }
+  } catch (e) {
+    alert('Error de conexión: ' + e);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = originalText; }
+    loadAll();
+  }
+}
+
+async function cronAction(action, jobId) {
+  let confirmMsg = `¿Estás seguro de que deseas ejecutar la tarea ${jobId} ahora?`;
+  if (action === 'pause') confirmMsg = `¿Deseas pausar la tarea ${jobId}?`;
+  if (action === 'resume') confirmMsg = `¿Deseas reanudar la tarea ${jobId}?`;
+  if (action === 'remove') confirmMsg = `¿Estás completamente seguro de que deseas eliminar permanentemente la tarea ${jobId}?`;
+  
+  if (!confirm(confirmMsg)) return;
+  
+  try {
+    const r = await fetch(`/api/cron/${action}?profile=${currentProfile}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: jobId }),
+      credentials: 'include'
+    });
+    const res = await r.json();
+    if (res.ok) {
+      alert(`Acción '${action}' completada con éxito.\nSalida: ${res.output || 'OK'}`);
+    } else {
+      alert(`Error ejecutando acción: ${res.error || res.output || 'Desconocido'}`);
+    }
+  } catch (e) {
+    alert('Error de conexión: ' + e);
+  } finally {
+    loadAll();
+  }
+}
+
+async function createCronJob(e) {
+  e.preventDefault();
+  const schedule = $('cronSchedule').value.trim();
+  const prompt = $('cronPrompt').value.trim();
+  if (!schedule || !prompt) return;
+  
+  if (!confirm(`¿Deseas programar una nueva tarea con schedule '${schedule}'?`)) return;
+  
+  const btn = e.target.querySelector('button[type="submit"]');
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Creando...';
+  
+  try {
+    const r = await fetch(`/api/cron/create?profile=${currentProfile}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ schedule, prompt }),
+      credentials: 'include'
+    });
+    const res = await r.json();
+    if (res.ok) {
+      alert(`Tarea cron creada con éxito.\nSalida: ${res.output || 'OK'}`);
+      $('cronSchedule').value = '';
+      $('cronPrompt').value = '';
+    } else {
+      alert(`Error creando tarea cron: ${res.error || res.output || 'Desconocido'}`);
+    }
+  } catch (e) {
+    alert('Error de conexión: ' + e);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+    loadAll();
+  }
+}
+
+async function runConsoleQuery() {
+  const query = $('consoleQuery').value.trim();
+  if (!query) return;
+  
+  const outputEl = $('consoleOutput');
+  const textarea = $('consoleQuery');
+  const btn = document.querySelector('#quick-console button');
+  
+  textarea.disabled = true;
+  btn.disabled = true;
+  const originalText = btn.textContent;
+  btn.textContent = 'Pensando...';
+  outputEl.textContent = 'Enviando comando a hermesAgent...\n(Esto puede tardar unos segundos mientras el agente ejecuta herramientas)';
+  outputEl.style.color = 'var(--muted)';
+  
+  try {
+    const r = await fetch(`/api/chat/query?profile=${currentProfile}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query }),
+      credentials: 'include'
+    });
+    const res = await r.json();
+    if (res.ok) {
+      outputEl.textContent = res.output || 'El agente terminó sin producir salida.';
+      outputEl.style.color = 'var(--green)';
+    } else {
+      outputEl.textContent = `ERROR:\n${res.error || res.output || 'Desconocido'}`;
+      outputEl.style.color = 'var(--red)';
+    }
+  } catch (e) {
+    outputEl.textContent = 'Error de conexión: ' + e;
+    outputEl.style.color = 'var(--red)';
+  } finally {
+    textarea.disabled = false;
+    btn.disabled = false;
+    btn.textContent = originalText;
+    outputEl.scrollTop = outputEl.scrollHeight;
+  }
+}
+
 async function loadAll(){
   $('overviewCards').innerHTML='<div class="card loading"><div class="metric">Cargando…</div><div class="label">Leyendo Hermes real</div></div>';
-  const r=await fetch('/api/overview',{credentials:'include'});
+  const r=await fetch(`/api/overview?profile=${currentProfile}`, {credentials:'include'});
   if(r.status===401){$('loginScreen').style.setProperty('display','flex','important');$('username').focus();return}
   if(!r.ok) throw new Error('HTTP '+r.status); state=await r.json();
+  
+  if (state.profile) {
+    currentProfile = state.profile;
+    localStorage.setItem("hermes_current_profile", currentProfile);
+  }
+  
+  const brandSub = $('brandProfile');
+  if (brandSub) {
+    brandSub.innerHTML = `Dashboard real · perfil: <b>${esc(currentProfile)}</b>`;
+  }
+  
   renderOverview(state); renderProfiles(state); renderCron(state); renderDiagnostics(state); renderFinanzas(state); renderHealth(state); renderNegocios(state); renderSessions(state); renderSkills(state); renderLogs(); setDetail('core');
 }
 bindNodes(); loadAll(); setInterval(loadAll, 30000);
