@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hermes Ops Dashboard</title>
+  <style>
+    :root{--bg:#05070d;--panel:rgba(15,23,42,.78);--panel2:rgba(2,6,23,.72);--line:rgba(148,163,184,.18);--text:#eef2ff;--muted:#9aa8bd;--cyan:#22d3ee;--violet:#8b5cf6;--green:#34d399;--amber:#fbbf24;--red:#fb7185;--blue:#60a5fa}
+    *{box-sizing:border-box} html{scroll-behavior:smooth} body{margin:0;min-height:100vh;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;background:radial-gradient(circle at 15% -10%,rgba(34,211,238,.24),transparent 28%),radial-gradient(circle at 85% 5%,rgba(139,92,246,.28),transparent 32%),linear-gradient(135deg,#020617,#080b13 48%,#111827);color:var(--text)}
+    body:before{content:"";position:fixed;inset:0;background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:44px 44px;mask-image:linear-gradient(to bottom,black,transparent 92%);pointer-events:none}
+    .app{position:relative;display:grid;grid-template-columns:275px 1fr;min-height:100vh}.sidebar{padding:24px;border-right:1px solid var(--line);background:rgba(2,6,23,.62);backdrop-filter:blur(22px);position:sticky;top:0;height:100vh;display:flex;flex-direction:column}.brand{display:flex;gap:12px;align-items:center;margin-bottom:28px}.logo{width:44px;height:44px;border-radius:16px;background:linear-gradient(135deg,var(--cyan),var(--violet));display:grid;place-items:center;color:#020617;font-weight:900;box-shadow:0 0 38px rgba(34,211,238,.24)}.brand h1{font-size:18px;margin:0}.brand p{margin:2px 0 0;color:var(--muted);font-size:12px}.nav{display:grid;gap:8px;margin-bottom:24px}.nav a{padding:12px 14px;border-radius:14px;border:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px;transition:all .2s ease;color:#cbd5e1;text-decoration:none}.nav a:hover{background:rgba(34,211,238,.08);color:var(--cyan);border-color:rgba(34,211,238,.35)}.nav a.active{background:rgba(34,211,238,.15);color:white;border-color:var(--cyan);box-shadow:0 0 12px rgba(34,211,238,.15)}.pill{font:700 11px ui-monospace,SFMono-Regular,Menlo,monospace;padding:3px 7px;border-radius:99px;background:rgba(34,211,238,.13);color:#67e8f9}.sidecard{margin-top:auto;border:1px solid var(--line);border-radius:22px;padding:16px;background:linear-gradient(180deg,rgba(139,92,246,.18),rgba(34,211,238,.08))}.sidecard p{color:var(--muted);font-size:13px;line-height:1.45}.main{padding:28px 32px 48px}.top{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin-bottom:20px}.eyebrow{font:800 12px ui-monospace,SFMono-Regular,Menlo,monospace;color:#67e8f9;letter-spacing:.12em;text-transform:uppercase}.title{font-size:40px;line-height:1.02;letter-spacing:-.045em;margin:8px 0 8px}.subtitle{color:var(--muted);margin:0;line-height:1.5}.actions{display:flex;gap:10px;align-items:center}.btn{border:1px solid var(--line);background:rgba(15,23,42,.74);color:var(--text);padding:11px 14px;border-radius:14px;font-weight:800;cursor:pointer;text-decoration:none}.btn.primary{border:0;background:linear-gradient(135deg,var(--cyan),var(--violet));color:#020617}.btn:disabled{opacity:0.6;cursor:not-allowed}.stamp{font-size:12px;color:var(--muted);margin-top:8px;text-align:right}.cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:18px 0}.grid{display:grid;grid-template-columns:1.25fr .9fr;gap:16px}.card{border:1px solid var(--line);border-radius:24px;padding:18px;background:var(--panel);box-shadow:0 18px 55px rgba(0,0,0,.22);backdrop-filter:blur(18px);overflow:hidden;transition:border-color .25s ease,box-shadow .25s ease}.card:hover{border-color:rgba(34,211,238,.35);box-shadow:0 22px 60px rgba(0,0,0,.3),0 0 24px rgba(34,211,238,.08)}.wide{grid-column:1/-1}.label{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em}.metric{font-size:28px;font-weight:900;letter-spacing:-.04em;margin-top:6px}.trend{color:#67e8f9;font-size:13px;margin-top:5px}.section-title{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}.section-title h2{font-size:17px;margin:0}.section-title span{font-size:12px;color:var(--muted)}.agent-mesh{position:relative;min-height:360px}.agent-mesh svg{position:absolute;inset:54px 16px 12px;width:calc(100% - 32px);height:290px}.link{stroke:rgba(34,211,238,.34);stroke-width:2;stroke-dasharray:8 10;animation:dash 8s linear infinite}.link.v{stroke:rgba(139,92,246,.32)}@keyframes dash{to{stroke-dashoffset:-90}}.node{position:absolute;z-index:2;width:154px;border:1px solid var(--line);border-radius:20px;padding:13px;background:rgba(2,6,23,.82);box-shadow:0 0 28px rgba(34,211,238,.08);cursor:pointer;transition:.18s}.node:hover,.node.active{transform:translateY(-3px);border-color:rgba(34,211,238,.72);box-shadow:0 0 28px rgba(34,211,238,.22)}.node b{display:block}.node small{display:block;color:var(--muted);font-size:11px;margin:5px 0}.status,.badge{display:inline-flex;align-items:center;border-radius:99px;padding:3px 8px;font:800 10px ui-monospace,SFMono-Regular,Menlo,monospace;color:#052e16;background:rgba(52,211,153,.9)}.badge.warn{background:rgba(251,191,36,.95);color:#3b2500}.badge.bad{background:rgba(251,113,133,.95);color:#3b0710}.badge.info{background:rgba(96,165,250,.92);color:#06152d}.node.core{left:50%;top:140px;transform:translateX(-50%)}.node.gateway{left:5%;top:75px}.node.session{right:5%;top:75px}.node.default{left:5%;bottom:30px}.node.tecnico{right:5%;bottom:30px}.node.finanzas{left:39%;top:40px}.node.cron{left:39%;bottom:18px}.panel-list{display:grid;gap:10px}.row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border-radius:16px;border:1px solid var(--line);background:rgba(15,23,42,.45)}.row b{display:block;font-size:14px}.row small{display:block;color:var(--muted);font-size:12px;margin-top:4px;line-height:1.4}.bars{display:grid;gap:12px}.barlabel{display:flex;justify-content:space-between;color:#cbd5e1;font-size:13px}.bar{height:10px;border-radius:99px;background:rgba(148,163,184,.18);overflow:hidden}.bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--cyan),var(--violet))}.table{width:100%;border-collapse:collapse;font-size:13px}.table th,.table td{padding:11px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}.table th{color:#93a4bc;font-size:11px;text-transform:uppercase;letter-spacing:.08em}.logs{font:12px ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;max-height:360px;overflow:auto;color:#cbd5e1;background:rgba(2,6,23,.72);border:1px solid var(--line);border-radius:16px;padding:12px}.tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}.tab{border:1px solid var(--line);background:rgba(2,6,23,.55);color:#cbd5e1;padding:8px 10px;border-radius:12px;cursor:pointer;font-weight:800}.tab.active{background:rgba(34,211,238,.15);color:white;border-color:rgba(34,211,238,.5)}.diag-score{width:118px;height:118px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--green) calc(var(--score)*1%),rgba(148,163,184,.18) 0);position:relative}.diag-score:after{content:"";position:absolute;inset:11px;border-radius:50%;background:#07101f}.diag-score b{z-index:1;font-size:28px}.diag-layout{display:grid;grid-template-columns:140px 1fr;gap:16px;align-items:start}.check{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.empty{color:var(--muted);padding:18px;border:1px dashed var(--line);border-radius:16px}.loading{min-height:106px}.finance-hero{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:12px}.mini{border:1px solid var(--line);border-radius:18px;background:rgba(2,6,23,.42);padding:14px}.mini b{font-size:22px}.mini small{display:block;color:var(--muted);margin-top:6px}@media(max-width:1100px){.app{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.grid,.cards,.finance-hero,.check,.diag-layout{grid-template-columns:1fr}.node{position:relative;display:inline-block;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;margin:6px;transform:none!important}.agent-mesh svg{display:none}.agent-mesh{min-height:auto}.top{display:block}.stamp{text-align:left}}
+    #loginScreen input:focus{border-color:var(--cyan)!important;box-shadow:0 0 8px rgba(34,211,238,.2)}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand"><div class="logo">H</div><div><h1>Hermes Ops</h1><p>Dashboard real · perfil técnico</p></div></div>
+      <nav class="nav">
+        <a href="#overview" class="active">Overview <span class="pill">LIVE</span></a>
+        <a href="#diagnostico">Diagnóstico <span class="pill">NEW</span></a>
+        <a href="#cron-advanced">Cron avanzado <span class="pill">NEW</span></a>
+        <a href="#finanzas">Finanzas <span class="pill">NEW</span></a>
+        <a href="#negocios">Negocios <span class="pill">MOCK</span></a>
+        <a href="#profiles">Perfiles</a>
+        <a href="#sessions">Sesiones</a>
+        <a href="#logs">Logs</a>
+      </nav>
+      <div class="sidecard"><strong>Conectado a Hermes</strong><p>Lee datos reales del CLI, SQLite, cron/jobs.json, skills y logs. Sigue siendo read-only por seguridad.</p></div>
+    </aside>
+    <main class="main">
+      <header class="top" id="overview">
+        <div><div class="eyebrow">Hermes Control Center · datos reales</div><h1 class="title">Panel operativo de tus agentes.</h1><p class="subtitle">Ahora incluye Cron avanzado, Diagnóstico automático y panel de Finanzas conectado al perfil <b>finanzas</b>.</p></div>
+        <div><div class="actions"><button class="btn" onclick="loadAll()">Actualizar</button><a class="btn primary" href="/api/overview" target="_blank">Ver JSON</a></div><div class="stamp" id="stamp">cargando…</div></div>
+      </header>
+      <section class="cards" id="overviewCards"></section>
+      <section class="grid">
+        <div class="card agent-mesh" id="profiles">
+          <div class="section-title"><h2>Agent Mesh · perfiles reales</h2><span>click para inspeccionar</span></div>
+          <svg viewBox="0 0 900 360" preserveAspectRatio="none"><line class="link" x1="450" y1="160" x2="160" y2="85"/><line class="link v" x1="450" y1="160" x2="740" y2="86"/><line class="link" x1="450" y1="160" x2="165" y2="285"/><line class="link v" x1="450" y1="160" x2="735" y2="285"/><line class="link" x1="450" y1="160" x2="450" y2="50"/><line class="link v" x1="450" y1="160" x2="450" y2="325"/></svg>
+          <div class="node core active" data-node="core"><b>Hermes Core</b><small id="coreModel">modelo…</small><span class="status">ONLINE</span></div>
+          <div class="node gateway" data-node="gateway"><b>Gateway</b><small id="gatewayText">estado…</small><span class="status">LIVE</span></div>
+          <div class="node session" data-node="sessions"><b>Sesiones</b><small id="sessionText">leyendo SQLite…</small><span class="status">DB</span></div>
+        </div>
+        <div class="card"><div class="section-title"><h2 id="detailTitle">Detalle</h2><span id="detailMeta">selecciona un nodo</span></div><div id="detailBody" class="panel-list"></div></div>
+        <div class="card wide" id="diagnostico"><div class="section-title"><h2>Diagnóstico automático</h2><span id="diagUpdated">Hermes doctor light</span></div><div class="diag-layout"><div><div class="diag-score" id="diagScore" style="--score:0"><b>—</b></div><p class="label" style="margin-top:10px">Score operativo</p></div><div><div class="tabs" id="diagTabs"></div><div id="diagRows" class="panel-list"></div></div></div></div>
+        <div class="card wide" id="cron-advanced"><div class="section-title"><h2>Cron jobs avanzado</h2><span id="cronUpdated"></span></div><div class="cards" id="cronSummary"></div><table class="table"><thead><tr><th>Job</th><th>Estado</th><th>Schedule</th><th>Próxima</th><th>Entrega</th><th>Skills</th><th>Último resultado</th></tr></thead><tbody id="cronTable"></tbody></table></div>
+        <div class="card wide" id="finanzas"><div class="section-title"><h2>Panel Finanzas</h2><span>perfil finanzas · Gmail/Drive/Sheets</span></div><div class="finance-hero" id="financeHero"></div><div class="check" id="financeChecklist"></div><h3>Jobs de finanzas</h3><div id="financeJobs" class="panel-list"></div><h3>Logs recientes del perfil finanzas</h3><div class="logs" id="financeLogs">cargando…</div></div>
+        <div class="card" id="negocios"><div class="section-title"><h2>Negocios</h2><span>resumen</span></div><div id="negociosRows" class="panel-list">cargando…</div></div>
+        <div class="card"><div class="section-title"><h2>Cron jobs reales</h2><span>resumen rápido</span></div><div id="cronRows" class="panel-list"></div></div>
+        <div class="card"><div class="section-title"><h2>Salud del sistema</h2><span>desde status / insights</span></div><div class="bars" id="healthBars"></div></div>
+        <div class="card wide" id="sessions"><div class="section-title"><h2>Sesiones recientes</h2><span>SQLite state.db</span></div><table class="table"><thead><tr><th>Título</th><th>Fuente</th><th>Modelo</th><th>Mensajes</th><th>Tools</th><th>Inicio</th></tr></thead><tbody id="sessionRows"></tbody></table></div>
+        <div class="card"><div class="section-title"><h2>Skills más usadas</h2><span>.usage.json</span></div><div id="skillRows" class="panel-list"></div></div>
+        <div class="card" id="logs">
+          <div class="section-title"><h2>Logs del sistema</h2><span>redactado · últimas líneas</span></div>
+          <div class="tabs" id="logTabs">
+            <button class="tab active" onclick="switchLog('gateway')">Gateway Log</button>
+            <button class="tab" onclick="switchLog('agent')">Agent Log</button>
+          </div>
+          <div class="logs" id="logContent">cargando…</div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <div id="loginScreen" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:9999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(10px)">
+    <div class="card" style="width:100%;max-width:400px;padding:32px;border:1px solid var(--line);background:var(--panel)">
+      <div class="brand" style="justify-content:center;margin-bottom:24px"><div class="logo">H</div><div><h1 style="font-size:20px">Hermes Ops</h1><p>Iniciar sesión</p></div></div>
+      <form id="loginForm" style="display:grid;gap:16px" onsubmit="login(event)">
+        <div style="display:grid;gap:6px"><label class="label">Usuario</label><input type="text" id="username" autofocus required oninput="this.style.borderColor='var(--line)'" style="width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);background:rgba(2,6,23,.5);color:#fff;outline:none;transition:border-color .2s"></div>
+        <div style="display:grid;gap:6px"><label class="label">Contraseña</label><input type="password" id="password" required oninput="this.style.borderColor='var(--line)'" style="width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);background:rgba(2,6,23,.5);color:#fff;outline:none;transition:border-color .2s"></div>
+        <button id="loginBtn" class="btn primary" type="submit" style="width:100%;margin-top:8px;padding:12px;border-radius:12px;font-weight:800;cursor:pointer">Acceder</button>
+        <div id="loginError" style="display:none;padding:10px;border-radius:12px;border:1px solid rgba(251,113,133,.2);background:rgba(251,113,133,.08);color:var(--red);font-size:13px;text-align:center;line-height:1.4"></div>
+      </form>
+    </div>
+  </div>
+<script>
+const $ = (id)=>document.getElementById(id);
+let state = null, diagFilter = 'all';
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function badge(text, cls=''){return `<span class="badge ${cls}">${esc(text)}</span>`}
+function sevClass(s){return s==='critical'?'bad':(s==='warn'?'warn':'ok')}
+function row(title, sub, right){return `<div class="row"><div><b>${esc(title)}</b><small>${esc(sub||'')}</small></div>${right?right:''}</div>`}
+function num(x){if(x==null||x==='')return '—'; const n=Number(String(x).replace(/,/g,'')); return Number.isFinite(n)?n.toLocaleString('en-US'):String(x)}
+function dt(x){if(!x)return '—'; try{return new Date(x).toLocaleString('es-PE')}catch(e){return x}}
+function renderOverview(d){
+  const totals=d.sessions?.totals||{}; const insights=d.insights||{}; const status=d.status||{}; const cron=d.cron?.jobs||[]; const diag=d.diagnostics||{}; const fin=d.finanzas||{};
+  $('overviewCards').innerHTML = [
+    ['Perfil activo', d.profile, status.provider||'Hermes local'],
+    ['Diagnóstico', `${diag.score ?? '—'}%`, (diag.items||[]).filter(i=>i.severity!=='ok').length+' alertas'],
+    ['Cron jobs', cron.length, `${d.cron?.summary?.active??0} activos · ${d.cron?.summary?.finanzas??0} finanzas`],
+    ['Finanzas', fin.workspace?.google_token_present?'OAuth OK':'OAuth pendiente', fin.jobs?.[0]?.next_in_human || fin.jobs?.[0]?.next_run || 'sin job'],
+    ['Sesiones', num(totals.sessions||insights.sessions), `${num(totals.messages||insights.messages)} mensajes`],
+    ['Tool calls', num(totals.tool_calls||insights.tool_calls), `${num(insights.total_tokens)} tokens 7d`],
+    ['Gateway', status.gateway||'—', status.telegram||'Telegram'],
+    ['Modelo', status.model||'—', status.provider||'provider'],
+  ].map(([l,m,t])=>`<div class="card"><div class="label">${esc(l)}</div><div class="metric">${esc(m)}</div><div class="trend">${esc(t)}</div></div>`).join('');
+  $('coreModel').textContent = `${status.model||'modelo'} · ${status.provider||'provider'}`;
+  $('gatewayText').textContent = status.gateway || 'verificando';
+  $('sessionText').textContent = `${num(totals.sessions)} sesiones · ${num(totals.messages)} mensajes`;
+  $('stamp').textContent = `Actualizado: ${dt(d.updated_at)}`;
+}
+function renderProfiles(d){
+  document.querySelectorAll('.node.dynamic').forEach(n=>n.remove());
+  const mesh = document.querySelector('.agent-mesh'); const spots = ['default','tecnico','finanzas','cron'];
+  (d.profiles?.profiles||[]).slice(0,4).forEach((p,i)=>{ const div=document.createElement('div'); div.className=`node dynamic ${spots[i]||''}`; div.dataset.node=`profile:${p.name}`; div.innerHTML=`<b>${esc(p.name)}</b><small>${esc(p.model)} · ${esc(p.gateway)}</small><span class="status">${p.active?'ACTIVE':'PROFILE'}</span>`; mesh.appendChild(div); });
+  bindNodes();
+}
+function renderCron(d){
+  const c=d.cron||{}, jobs=c.jobs||[]; $('cronUpdated').textContent=c.updated_at?dt(c.updated_at):'';
+  $('cronRows').innerHTML = jobs.length?jobs.map(j=>row(j.name||j.id, `${j.schedule||'sin schedule'} · next: ${j.next_in_human||j.next_run||'—'} · profile: ${j.profile||'—'}`, badge(j.state||j.state_detail||'—', (j.enabled===false)?'warn':'ok'))).join(''):'<p class="empty">No hay cron jobs detectados.</p>';
+  const s=c.summary||{}; $('cronSummary').innerHTML=[['Total',s.total??0,'jobs registrados'],['Activos',s.active??0,'habilitados/scheduled'],['Finanzas',s.finanzas??0,'jobs del perfil finanzas'],['Errores',s.errors??0,'últimos errores']].map(([a,b,c])=>`<div class="card"><div class="label">${a}</div><div class="metric">${b}</div><div class="trend">${c}</div></div>`).join('');
+  $('cronTable').innerHTML=jobs.map(j=>`<tr><td><b>${esc(j.name||j.id)}</b><br><small class="mono">${esc(j.id)}</small><br><small>${esc(j.profile||'—')}</small></td><td>${badge(j.state||j.state_detail||'—', j.last_error?'bad':(j.enabled===false?'warn':'ok'))}</td><td class="mono">${esc(j.schedule||'—')}</td><td>${esc(j.next_in_human||'—')}<br><small>${esc(j.next_run||'—')}</small></td><td>${esc(j.deliver||'—')}</td><td>${(j.skills||[]).map(x=>badge(x,'info')).join(' ')||'—'}</td><td>${esc(j.last_status||'sin ejecución')}<br><small>${esc(j.last_error||j.last_delivery_error||'')}</small></td></tr>`).join('') || '<tr><td colspan="7">Sin jobs.</td></tr>';
+}
+function renderDiagnostics(d){
+  const diag=d.diagnostics||{}, items=diag.items||[], areas=['all',...Array.from(new Set(items.map(i=>i.area||'general')))].slice(0,8);
+  $('diagScore').style.setProperty('--score', diag.score||0); $('diagScore').querySelector('b').textContent=(diag.score??'—')+'%'; $('diagUpdated').textContent=diag.updated_at?dt(diag.updated_at):'Hermes doctor light';
+  $('diagTabs').innerHTML=areas.map(a=>`<button class="tab ${diagFilter===a?'active':''}" onclick="diagFilter='${esc(a)}';renderDiagnostics(state)">${esc(a)}</button>`).join('');
+  const shown=items.filter(i=>diagFilter==='all'||i.area===diagFilter);
+  $('diagRows').innerHTML=shown.map(i=>row(i.title, `${i.detail}${i.action?' · Acción sugerida: '+i.action:''}`, badge(i.severity, sevClass(i.severity)))).join('') || '<p class="empty">Sin hallazgos.</p>';
+}
+function renderFinanzas(d){
+  const f=d.finanzas||{}, w=f.workspace||{}, job=f.jobs?.[0]||{};
+  $('financeHero').innerHTML=[['Cron diario', job.next_in_human||job.next_run||'—', job.schedule||'0 7 * * *'],['Google OAuth', w.google_token_present?'Token presente':'Token no detectado', `${w.scope_count||0} scopes`],['Gateway', f.status?.gateway||'—', f.status?.telegram||'Telegram']].map(([a,b,c])=>`<div class="mini"><span class="label">${esc(a)}</span><b>${esc(b)}</b><small>${esc(c)}</small></div>`).join('');
+  $('financeChecklist').innerHTML=(f.checklist||[]).map(x=>row(x.label,x.detail,badge(x.ok?'OK':'Revisar',x.ok?'ok':'warn'))).join('');
+  $('financeJobs').innerHTML=(f.jobs||[]).map(j=>row(j.name||j.id, `${j.schedule||'—'} · ${j.next_in_human||j.next_run||'—'} · entrega: ${j.deliver||'—'}`, badge(j.state||j.state_detail||'—', j.last_error?'bad':'ok'))).join('') || '<p class="empty">No hay jobs de finanzas detectados.</p>';
+  $('financeLogs').textContent=[...(f.logs?.errors||[]),...(f.logs?.agent||[])].slice(-45).join('\n') || 'Sin logs recientes en perfil finanzas.';
+}
+function renderNegocios(d){
+  const n=d.negocios||{};
+  $('negociosRows').innerHTML = [
+    ['Ventas hoy', 'Ingresos totales estimados', n.revenue_today||'—', 'ok'],
+    ['Conversión', 'Tasa promedio de leads', n.conversion_rate||'—', 'info'],
+    ['Clientes activos', 'Usuarios recurrentes 24h', n.active_clients||'—', 'ok']
+  ].map(([label, sub, val, badgeCls])=>`<div class="row"><div><b>${esc(label)}</b><small>${esc(sub)}</small></div><span class="badge ${badgeCls}">${esc(val)}</span></div>`).join('');
+}
+function renderHealth(d){
+  const totals=d.sessions?.totals||{}; const tools=Number(totals.tool_calls||0); const jobs=(d.cron?.jobs||[]).length; const gw=d.status?.gateway==='running'?98:35; const diag=d.diagnostics?.score??70;
+  const bars=[['Diagnóstico',diag],['Gateway',gw],['Sesiones indexadas',Math.min(100,Math.round((Number(totals.sessions||0)/30)*100))],['Actividad tools',Math.min(100,Math.round((tools/600)*100))],['Cron configurado',jobs?88:20]];
+  $('healthBars').innerHTML=bars.map(([n,v])=>`<div class="barrow"><div class="barlabel"><span>${esc(n)}</span><b>${v}%</b></div><div class="bar"><i style="width:${v}%"></i></div></div>`).join('');
+}
+function renderSessions(d){ $('sessionRows').innerHTML=(d.sessions?.sessions||[]).map(s=>`<tr><td>${esc(s.title||s.id)}</td><td>${esc(s.source)}</td><td>${esc(s.model||'—')}</td><td>${num(s.message_count)}</td><td>${num(s.tool_call_count)}</td><td>${esc(s.started_at_iso||'—')}</td></tr>`).join(''); }
+function renderSkills(d){ const skills=d.skills?.skills||[]; $('skillRows').innerHTML=skills.slice(0,8).map(s=>row(s.name, `views: ${s.view_count||0} · edits: ${s.patch_count||0} · ${s.state||'active'}`, badge(s.use_count||0,'ok'))).join('') || '<p class="empty">Sin usage.json detectable.</p>'; }
+let logCache = { gateway: [], agent: [] };
+let activeLogTab = 'gateway';
+
+function switchLog(type) {
+  activeLogTab = type;
+  document.querySelectorAll('#logTabs .tab').forEach(btn => btn.classList.toggle('active', btn.textContent.toLowerCase().includes(type)));
+  const el = $('logContent');
+  el.textContent = (logCache[type] || []).slice(-60).join('\n') || `Sin logs de ${type} recientes.`;
+  el.scrollTop = el.scrollHeight;
+}
+async function renderLogs() {
+  try {
+    const r = await fetch('/api/logs', { credentials: 'include' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    logCache = await r.json();
+    switchLog(activeLogTab);
+  } catch (e) {
+    $('logContent').textContent = 'Error cargando logs: ' + e;
+  }
+}
+function setDetail(key){
+  const d=state; document.querySelectorAll('.node').forEach(n=>n.classList.toggle('active', n.dataset.node===key));
+  if(key==='core'){$('detailTitle').textContent='Hermes Core'; $('detailMeta').textContent='status real'; $('detailBody').innerHTML=[row('Modelo',d.status.model,d.status.provider),row('Home',d.hermes_home,'')].join(''); return}
+  if(key==='gateway'){$('detailTitle').textContent='Gateway'; $('detailMeta').textContent='mensajería'; $('detailBody').innerHTML=[row('Estado',d.status.gateway||'desconocido',badge(d.status.telegram||'telegram')),row('Scheduled jobs',d.status.scheduled_jobs||'—','')].join(''); return}
+  if(key==='sessions'){$('detailTitle').textContent='Sesiones'; $('detailMeta').textContent='SQLite'; const t=d.sessions.totals; $('detailBody').innerHTML=[row('Sesiones',num(t.sessions),''),row('Mensajes',num(t.messages),''),row('Tool calls',num(t.tool_calls),'')].join(''); return}
+  if(key==='cron'){$('detailTitle').textContent='Cron'; $('detailMeta').textContent='scheduler'; $('detailBody').innerHTML=(d.cron.jobs||[]).map(j=>row(j.name||j.id,j.schedule,badge(j.state||j.state_detail))).join('')||'Sin jobs'; return}
+  if(key.startsWith('profile:')){const name=key.split(':')[1]; const p=(d.profiles.profiles||[]).find(x=>x.name===name)||{}; $('detailTitle').textContent='Perfil '+name; $('detailMeta').textContent=p.active?'activo':'perfil'; $('detailBody').innerHTML=[row('Modelo',p.model,''),row('Gateway',p.gateway,badge(p.active?'activo':'perfil',p.active?'ok':'')),row('Alias',p.alias||'—','')].join('');}
+}
+function bindNodes(){document.querySelectorAll('.node').forEach(n=>n.onclick=()=>setDetail(n.dataset.node));}
+async function login(e){
+  e.preventDefault(); const user=$('username').value, pass=$('password').value, err=$('loginError'); err.style.display='none';
+  const btn=$('loginBtn'); btn.disabled=true; btn.textContent='Accediendo...';
+  try {
+    const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:user,password:pass})});
+    if(r.ok){$('loginScreen').style.setProperty('display','none','important'); loadAll()}
+    else{err.textContent='Usuario o contraseña incorrectos'; err.style.display='block'; $('username').style.borderColor='var(--red)'; $('password').style.borderColor='var(--red)'}
+  } catch(e){err.textContent='Error de conexión'; err.style.display='block'}
+  finally {btn.disabled=false; btn.textContent='Acceder'}
+}
+async function loadAll(){
+  $('overviewCards').innerHTML='<div class="card loading"><div class="metric">Cargando…</div><div class="label">Leyendo Hermes real</div></div>';
+  const r=await fetch('/api/overview',{credentials:'include'});
+  if(r.status===401){$('loginScreen').style.setProperty('display','flex','important');$('username').focus();return}
+  if(!r.ok) throw new Error('HTTP '+r.status); state=await r.json();
+  renderOverview(state); renderProfiles(state); renderCron(state); renderDiagnostics(state); renderFinanzas(state); renderHealth(state); renderNegocios(state); renderSessions(state); renderSkills(state); renderLogs(); setDetail('core');
+}
+bindNodes(); loadAll(); setInterval(loadAll, 30000);
+const navLinks = document.querySelectorAll('.nav a');
+function setActive(link) {
+  navLinks.forEach(l => l.classList.remove('active'));
+  link.classList.add('active');
+}
+navLinks.forEach(link => {
+  link.addEventListener('click', (e) => {
+    setActive(link);
+    const id = link.getAttribute('href');
+    const el = document.querySelector(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+});
+const updateActive = () => {
+  let best = navLinks[0], bestTop = Infinity;
+  navLinks.forEach(link => {
+    const el = document.querySelector(link.getAttribute('href'));
+    if (!el) return;
+    const top = Math.abs(el.getBoundingClientRect().top);
+    if (top < bestTop) { bestTop = top; best = link; }
+  });
+  navLinks.forEach(link => link.classList.toggle('active', link === best));
+};
+let scrollTimer;
+window.addEventListener('scroll', () => {
+  clearTimeout(scrollTimer);
+  scrollTimer = setTimeout(updateActive, 150);
+});
+updateActive();
+</script>
+</body>
+</html>
